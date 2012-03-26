@@ -1,0 +1,29 @@
+Second to second replay of the Apollo 11 mission radio logs. 
+Enacted as dialogue between spacecraft and earth staff. 
+
+HOWTO
+
+1. Use the apollo.csv file included to create a database with the following metadata
+
+mysql> describe apollo_transcripts;
++--------------+-------------+------+-----+---------+----------------+
+| Field        | Type        | Null | Key | Default | Extra          |
++--------------+-------------+------+-----+---------+----------------+
+| id           | int(11)     | NO   | PRI | NULL    | auto_increment | 
+| mission_time | int(11)     | YES  | MUL | NULL    |                | 
+| comms        | text        | YES  |     | NULL    |                | 
+| speaker      | varchar(50) | YES  |     | NULL    |                | 
++--------------+-------------+------+-----+---------+----------------+
+
+2. Install my Assumptions minimalist MVC framework for perl
+
+3. Install the perl script to read sections from this log
+
+4. Fix the FIXMEs in the perl script. DB connection, and the time for lift off in the reenactment
+
+5. Point the index.html to your perl script
+
+6. LIFTOFF!!
+
+ - this is joint work with Morten Just (@mortenjust on Twitter) (CSS and presentation ideas)
+

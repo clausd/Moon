@@ -1,0 +1,266 @@
+<html>
+<head>
+	<title>Apollo 11 mission - Live from space</title>
+	<script type="text/javascript" src="jquery-1.2.3.min.js"></script>
+	<script type="text/javascript">
+	    var now = 0;
+	    var liftoff = 0;
+	    var current;
+	    var future;
+	    var i = 0;
+            var correct_to_now; 
+            var watch_timeout;
+            var refresh_timeout;
+            var next_timeout;
+            var cached = false;
+	    var images = {
+            CDR:"armstrong.jpg",
+            CDREAGLE:"armstrong.jpg",
+            CDRTRAN:"armstrong.jpg",
+            CDREVA:"armstrong.jpg",
+            CMP:"collins.jpg",
+            LMP:"aldrin.jpg",
+            LMPEAGLE:"aldrin.jpg",
+            LMPTRAN:"aldrin.jpg",
+            LMPEVA:"aldrin.jpg",
+            NIXON:"nixon.jpg",
+            SC:"unidentifiable_crew.jpg",
+            MS:"multiple_speakers.jpg",
+            LCC:"launch_control.jpg",
+            CC:"capsule_communicator.jpg",
+            F:"flight_director.jpg",
+            CT:"communications_technician.jpg",
+            HORNET:"uss_hornett.jpg",
+            R:"recovery_helicopter.jpg",
+            NOISE:"noise.jpg"
+	    }
+	    var names = {
+            CDR:"Commander Neil A. Armstrong",
+            CDREAGLE:"Commander Neil A. Armstrong from the lunar module",
+            CDRTRAN:"Commander Neil A. Armstrong from the lunar base",
+            CDREVA:"Commander Neil A. Armstrong from the surface of the moon",
+            CMP:"Command module pilot Michael Collins",
+            LMP:"Lunar module pilot Edwin E. ALdrin, Jr.",
+            LMPEAGLE:"Lunar module pilot Edwin E. ALdrin, Jr. from the lunar module",
+            LMPTRAN:"Lunar module pilot Edwin E. ALdrin, Jr. from the lunar base",
+            LMPEVA:"Lunar module pilot Edwin E. ALdrin, Jr. from the surface of the moon",
+            NIXON:"President Nixon",
+            SC:"Unidentifiable crewmember",
+            MS:"Multiple (simultaneous) speakers",
+            LCC:"Launch Control Center",
+            CC:"Capsule Communicator (CAP COMM)",
+            F:"Flight Director",
+            CT:"Communications Technician (COMM TECH)",
+            HORNET:"USS Hornet",
+            R:"Recovery helicopter",
+            NOISE:"(Noise)"
+	    }
+	    var place = {
+            CDR:"space",
+            CDREAGLE:"space",
+            CDRTRAN:"space",
+            CDREVA:"space",
+            CMP:"space",
+            LMP:"space",
+            LMPEAGLE:"space",
+            LMPTRAN:"space",
+            LMPEVA:"space",
+            NIXON:"earth",
+            SC:"space",
+            MS:"space",
+            LCC:"earth",
+            CC:"earth",
+            F:"earth",
+            CT:"earth",
+            HORNET:"earth",
+            R:"earth",
+            NOISE:"space"
+	    }
+	    function set_single(replik) {
+	        if (replik) {
+                var p = place[replik[1]];
+                $('#' + p + ' img').attr('src', images[replik[1]]);
+                $('#' + p + ' .speaker').html(names[replik[1]] + " " + replik[3]);
+                $('#' + p + ' .replik').html(replik[2]);
+                set_visible(p);
+            }
+	    }
+	    function set_visible(place) {
+	        $('#countdown').hide();
+                $('#tuning').hide();
+	        if (place == "earth") {
+	            $('#earth').fadeIn("fast");
+	            $('#space').fadeOut("fast");
+	        } else {
+	            $('#earth').fadeOut("fast");
+	            $('#space').fadeIn("fast");
+	        }
+	    }
+	    function set_transcript_first(data) {
+	        now = data['now'];
+	        liftoff = data['liftoff'];
+	        current = data['current'];
+	        future = data['future'];
+	        i = 0;
+                correct_to_now = now-realtime();
+	        if (now>liftoff) {
+               	   set_single(current);
+               	   if (i< future.length) {
+                     next_timeout = window.setTimeout("set_transcript_next()", (future[i][0]-now)*1000);       
+               	   }
+               	   // reload at least every five minutes 
+               	   refresh_timeout = window.setTimeout("refresh_transcript();",30000);
+	           elapsed_clock();
+                } else {
+                   refresh_timeout = window.setTimeout("refresh_transcript();",Math.min(liftoff-now,300)*1000);
+		    $('#countdown').show();
+                    $('#tuning').hide();
+                   countdown_clock();
+                }
+	    }
+	    function set_transcript_next() {
+	        current = future[i];
+	        i++;
+	        now = current[0];
+	        set_single(current);
+	        if (i< future.length) {
+	            next_timeout = window.setTimeout("set_transcript_next()", (future[i][0]-now)*1000);       
+	        } else {
+                    clear_timeouts();
+	            load_transcript();
+	        }
+	    }
+            function refresh_transcript() {
+                clear_timeouts();
+                load_transcript();
+            }
+		function load_transcript() {
+			$.getJSON("http://www.classy.dk/cgi-bin/test_apollo_transcript.pl?q=transcript&jsonp=?",
+			function(data, textStatus){
+			    set_transcript_first(data);
+			});		
+		}
+                function first_load() {
+		        $('#tuning').fadeIn("slow");
+			cache_image('CDR');
+			cache_image('CMP');
+			cache_image('LMP');
+			cache_image('NIXON');
+			cache_image('SC');
+			cache_image('MS');
+			cache_image('LCC');
+			cache_image('CC');
+			cache_image('F');
+			cache_image('CT');
+			cache_image('HORNET');
+			cache_image('R');
+			cache_image('NOISE');
+                        load_transcript();
+                }
+		function cache_image(name) {
+         	    	  $('#' + place[name] + ' img').attr('src', images[name]);
+		}
+		function countdown_clock() {
+                    t = realtime();
+		    set_countdown(liftoff-(t+correct_to_now));
+		    if (t+correct_to_now<liftoff) {
+    		        watch_timeout = window.setTimeout("countdown_clock()",1000);
+    		    }
+		}
+		function elapsed_clock() {
+                    t = realtime();
+		    set_elapsed((t+correct_to_now)-liftoff);
+    		    watch_timeout = window.setTimeout("elapsed_clock()",1000);
+    		}
+		function set_countdown(seconds) {
+		    var s = seconds % 60;
+		    var m = ((seconds-s)/60) % 60;
+		    var h = ((seconds-s)/60-m)/60;
+                    if (h <= 9) h = "0" + h;
+                    if (m <= 9) m = "0" + m;
+                    if (s <= 9) s = "0" + s;		    
+		    $('#clock').html(h + ":" + m + ":" + s);
+		}
+		function set_elapsed(seconds) {
+		    var s = seconds % 60;
+		    var m = ((seconds-s)/60) % 60;
+		    var h = ((seconds-s)/60-m)/60 % 24;
+                    var d = ((((seconds-s)/60-m)/60)-h)/24;
+                    if (h <= 9) h = "0" + h;
+                    if (m <= 9) m = "0" + m;
+                    if (s <= 9) s = "0" + s;
+                    d = "0" + d;   
+		    $('#elapsed').html("T + " + d + ":" + h + ":" + m + ":" + s);
+		}
+                function realtime() {
+                     var d = new Date();
+                     r = d.getTime();
+                     r = (r-(r % 1000))/1000;
+                     return r;
+                }
+                function clear_timeouts() {
+                     window.clearTimeout(watch_timeout);
+                     window.clearTimeout(next_timeout);
+                     window.clearTimeout(refresh_timeout);
+                }
+	</script>
+	<style>
+		body {  background-color:black;  margin-top:200px; padding:0px; color:fff; }
+		#main {height:90%; font-family:helvetica,arial; font-size:26px; }
+		#tuning {color:#afafaf;text-align:center;display:none;}
+		#countdown {text-align:center;display:none;}
+		#imgcache {display:none;}
+		#clock {color:#e6bf68;}
+		#space {float:right;display:none;width:549px;}
+		#earth {display:none; width:549px;}
+        #earth img {float:left; margin-right:14px;}
+        #space img {float:right; margin-left:14px;}
+        img {width:141px;}
+        .textpart {padding:4px; margin:4px;}
+        #space .textpart {text-align:right;}
+        .replik { font-family:helvetica,arial; font-size:26px; width:400px; color:e6bf68;Ê}
+        .speaker { font-size:11px; color:#fff; font-family:helvetica,arial; Êwidth:400px; }	
+        .footer {text-align:center;font-size:11;color:#ccc;}
+        a {color:white};
+    </style>
+</head>
+<body onload="first_load();">
+<div id="main">
+<div id="countdown">
+<!--<h1>Apollo 11</h1>-->
+Apollo 11 will lift off in <span id="clock"></span>
+</div>
+<div id="tuning">Finding Apollo ...</div>
+<div id="space">
+    <div>
+        <img class="img" src=""/>
+        <div class="textpart">
+            <div class="speaker">
+            </div>
+            <div class="replik">
+            </div>
+        </div>
+    </div>
+</div>
+<div id="earth">
+    <div>
+        <img src=""/>
+        <div class="textpart">
+            <div class="speaker">
+            </div>
+            <div class="replik">
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<div class="footer"><a href="http://twitter.com/Claus">@Claus</a>,<a href="http://twitter.com/mortenjust">@mortenjust</a> - Live from 1969 -  <span id="elapsed"></span> - <a href="http://www.classy.dk/log/archive/004138.html">more info</a></div>
+<script language="javascript">
+document.write("<img style=\"display:none;\" src=\"http://www.classy.dk/cgi-bin/tracker.gif?referrer="+escape(document.referrer)+"&hiturl="+escape(document.location)+"\">")
+</script>
+<script type="text/javascript" src="http://include.reinvigorate.net/re_.js"></script>
+<script type="text/javascript">
+re_("7j478-51io1j71ya");
+</script>
+</body>
+</html>
